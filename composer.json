@@ -1,0 +1,42 @@
+{
+    "name": "ekumanov/flarum-ext-markdown-tables",
+    "description": "Markdown tables for Flarum 2.0, with Tiptap rich-text editor integration.",
+    "keywords": [
+        "flarum",
+        "extension",
+        "markdown",
+        "tables",
+        "tiptap"
+    ],
+    "type": "flarum-extension",
+    "license": "MIT",
+    "support": {
+        "issues": "https://github.com/ekumanov/flarum-ext-markdown-tables/issues",
+        "source": "https://github.com/ekumanov/flarum-ext-markdown-tables"
+    },
+    "require": {
+        "flarum/core": "^2.0@beta",
+        "php": "^8.2"
+    },
+    "authors": [
+        {
+            "name": "ekumanov",
+            "email": "ekumanov@users.noreply.github.com"
+        },
+        {
+            "name": "Alexander Skvortsov",
+            "role": "Original author (Flarum 1.x extension)"
+        }
+    ],
+    "extra": {
+        "flarum-extension": {
+            "title": "Markdown Tables",
+            "category": "feature",
+            "icon": {
+                "name": "fas fa-table",
+                "backgroundColor": "#6932D1",
+                "color": "#ffffff"
+            }
+        }
+    }
+}

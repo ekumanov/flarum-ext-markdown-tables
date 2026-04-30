@@ -1,0 +1,103 @@
+// Flarum 2.0 exposes its theme tokens as CSS custom properties on :root —
+// using var(--…) here keeps tables in sync with the user's light/dark scheme
+// switch without us having to fight Less variable scoping.
+
+// ── Rendered post tables ────────────────────────────────────────────
+.Post-body {
+    .markdown-table-wrapper {
+        overflow-x: auto;
+        margin: 1em 0;
+        max-width: 100%;
+    }
+
+    table {
+        border-collapse: collapse;
+        margin: 0;
+        min-width: 100%;
+    }
+
+    th, td {
+        padding: 6px 10px;
+        border: 1px solid var(--control-bg);
+        text-align: left;
+        vertical-align: top;
+    }
+
+    th {
+        background: var(--control-bg);
+        font-weight: bold;
+    }
+
+    tr:nth-child(even) td {
+        background: rgba(127, 127, 127, 0.05);
+    }
+}
+
+// ── Tiptap composer table styling ───────────────────────────────────
+.TextEditor .ProseMirror {
+    table {
+        border-collapse: collapse;
+        margin: 0.5em 0;
+        overflow: hidden;
+        table-layout: fixed;
+        width: 100%;
+
+        td, th {
+            border: 1px solid var(--control-bg);
+            box-sizing: border-box;
+            min-width: 1em;
+            padding: 6px 8px;
+            position: relative;
+            vertical-align: top;
+
+            > * {
+                margin-bottom: 0;
+            }
+        }
+
+        th {
+            background: var(--control-bg);
+            font-weight: bold;
+            text-align: left;
+        }
+    }
+
+    .markdown-table-wrapper {
+        overflow-x: auto;
+        margin: 0.5em 0;
+    }
+}
+
+// ── Insert-table dropdown form ──────────────────────────────────────
+.MarkdownTablesInsertDropdown {
+    .Dropdown-menu {
+        padding: 12px;
+        min-width: 220px;
+    }
+
+    .Form-group {
+        margin-bottom: 10px;
+
+        label {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            color: var(--muted-color);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        input.FormControl {
+            width: 100%;
+        }
+    }
+
+    .Button--primary {
+        width: 100%;
+    }
+}
+
+.MarkdownTablesContextMenu {
+    min-width: 200px;
+}

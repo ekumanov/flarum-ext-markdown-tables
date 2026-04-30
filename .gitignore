@@ -1,0 +1,9 @@
+vendor/
+node_modules/
+composer.lock
+js/dist/*.map
+.idea/
+.vscode/
+*.DS_Store
+.claude/
+discuss-posts/
