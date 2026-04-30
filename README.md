@@ -2,10 +2,24 @@
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Latest Stable Version](https://img.shields.io/packagist/v/ekumanov/flarum-ext-markdown-tables.svg)](https://packagist.org/packages/ekumanov/flarum-ext-markdown-tables)
+[![Total Downloads](https://img.shields.io/packagist/dt/ekumanov/flarum-ext-markdown-tables.svg)](https://packagist.org/packages/ekumanov/flarum-ext-markdown-tables)
+[![Backend Tests](https://github.com/ekumanov/flarum-ext-markdown-tables/actions/workflows/backend.yml/badge.svg)](https://github.com/ekumanov/flarum-ext-markdown-tables/actions/workflows/backend.yml)
 
 Adds proper markdown table support to Flarum 2.0, both in rendered posts and inside the [FriendsOfFlarum Rich Text](https://discuss.flarum.org/d/38789-friendsofflarum-rich-text-wysiwyg) WYSIWYG editor.
 
 This is a Flarum 2.0 port of [askvortsov/flarum-markdown-tables](https://github.com/askvortsov1/flarum-markdown-tables) — the original Flarum 1.x extension was built on `askvortsov-rich-text` (ProseMirror-based), which has been replaced in 2.0 by `fof-rich-text` (Tiptap v3-based). The port was made with [Claude Code](https://claude.com/claude-code).
+
+## Screenshots
+
+|  Light  |  Dark  |
+|---------|--------|
+| ![Light mode](screenshots/light-desktop.png) | ![Dark mode](screenshots/dark-desktop.png) |
+
+| Mobile (light) | Mobile (dark) |
+|----------------|---------------|
+| ![Mobile light](screenshots/light-mobile.png) | ![Mobile dark](screenshots/dark-mobile.png) |
+
+Tables that overflow the post column scroll horizontally on narrow viewports — notice how the `Notes` column on the mobile shots can be swiped into view.
 
 ## What you get
 
@@ -117,7 +131,7 @@ The button is added to the toolbar via `extend(TiptapMenu.prototype, 'items', �
 
 ### A note on bundle isolation
 
-Our extension bundles `@tiptap/extension-table` was *not* used. Instead we built minimal Node specs ourselves and reused `fof/rich-text`'s exposed `@tiptap/core` Node constructor. This avoids shipping a duplicate copy of Tiptap-core or `prosemirror-tables` — nodes share the same Tiptap instance the editor is using, so `instanceof` checks and schema lookups all line up.
+Our extension does *not* bundle `@tiptap/extension-table`. Instead we built minimal Node specs ourselves and reused `fof/rich-text`'s exposed `@tiptap/core` Node constructor. This avoids shipping a duplicate copy of Tiptap-core or `prosemirror-tables` — nodes share the same Tiptap instance the editor is using, so `instanceof` checks and schema lookups all line up.
 
 The trade-off: we don't get column-resize handles or the cell-selection plugin you'd get from `@tiptap/extension-table`. For a markdown forum, that's the right trade — pipe tables can't express column widths anyway, so column-resize would only set state that disappears on save.
 
