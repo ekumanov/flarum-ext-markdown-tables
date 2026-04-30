@@ -51,10 +51,28 @@ Type a standard pipe table in the composer:
 
 ```bash
 composer require ekumanov/flarum-ext-markdown-tables
+rm -rf storage/formatter/*
 php flarum cache:clear
 ```
 
 Then enable the extension in the admin panel under **Extensions > Markdown Tables**.
+
+> **Why `rm -rf storage/formatter/*`?** Flarum compiles the s9e/text-formatter renderer into a PHP class under `storage/formatter/Renderer_*.php`. `php flarum cache:clear` does **not** touch that file. If a renderer was compiled before this extension was active, it has no template branches for `<TABLE>` / `<TR>` / `<TD>` etc., and existing posts that contain table XML will silently render as empty space. Removing the file forces a regenerate that includes the table templates.
+
+## Upgrading from Flarum 1.x with `askvortsov/flarum-markdown-tables`
+
+If you're coming from Flarum 1.x and previously had [`askvortsov/flarum-markdown-tables`](https://github.com/askvortsov1/flarum-markdown-tables) installed, your existing post XML is already compatible — both extensions enable the same s9e/text-formatter `PipeTables` plugin and the stored XML uses the same `<TABLE>` tag names. **No re-parse of old posts is needed.**
+
+But you almost certainly **do** need to clear the formatter cache, because during the period between the 1.x→2.0 migration and the install of this extension the renderer was recompiled without table templates. Run:
+
+```bash
+composer require ekumanov/flarum-ext-markdown-tables
+rm -rf storage/formatter/*
+php flarum cache:clear
+php flarum assets:publish
+```
+
+After that, every existing post that already had a markdown table will render as a real `<table>` again — no edits required.
 
 ## Updating
 
