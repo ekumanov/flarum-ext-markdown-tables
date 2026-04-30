@@ -11,13 +11,9 @@ This is a Flarum 2.0 port of [askvortsov/flarum-markdown-tables](https://github.
 
 ## Screenshots
 
-| Desktop (light) | Desktop (dark) |
-|-----------------|----------------|
+|  Light  |  Dark  |
+|---------|--------|
 | ![Light mode](screenshots/light-desktop.png) | ![Dark mode](screenshots/dark-desktop.png) |
-
-| Mobile (light) | Mobile (dark) |
-|----------------|---------------|
-| ![Mobile light](screenshots/light-mobile.png) | ![Mobile dark](screenshots/dark-mobile.png) |
 
 Tables size to their natural content, so a typical post table fits comfortably on mobile. Tables wider than the post column get a horizontal-scroll wrapper instead of forcing every cell to crush.
 
