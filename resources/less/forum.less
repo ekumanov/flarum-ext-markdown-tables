@@ -13,7 +13,9 @@
     table {
         border-collapse: collapse;
         margin: 0;
-        min-width: 100%;
+        // No min-width: 100% — let the table size to its content. This way
+        // narrow tables stay compact on desktop and reasonable-width tables
+        // shrink to fit on mobile instead of jumping straight to scroll.
     }
 
     th, td {

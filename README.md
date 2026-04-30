@@ -15,11 +15,11 @@ This is a Flarum 2.0 port of [askvortsov/flarum-markdown-tables](https://github.
 |---------|--------|
 | ![Light mode](screenshots/light-desktop.png) | ![Dark mode](screenshots/dark-desktop.png) |
 
-| Mobile (light) | Mobile (dark) |
-|----------------|---------------|
-| ![Mobile light](screenshots/light-mobile.png) | ![Mobile dark](screenshots/dark-mobile.png) |
+A table that's wider than the post column gets a horizontal-scroll wrapper on narrow viewports, instead of being forced to crush each cell:
 
-Tables that overflow the post column scroll horizontally on narrow viewports — notice how the `Notes` column on the mobile shots can be swiped into view.
+| Wide table on mobile (light) | Wide table on mobile (dark) |
+|------------------------------|-----------------------------|
+| ![Wide table mobile light](screenshots/wide-mobile-light.png) | ![Wide table mobile dark](screenshots/wide-mobile-dark.png) |
 
 ## What you get
 
