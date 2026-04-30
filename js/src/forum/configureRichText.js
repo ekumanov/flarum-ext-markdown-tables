@@ -45,9 +45,16 @@ export default function configureRichText() {
         return original();
     });
 
+    // We always queue our loader, even if useRichTextEditor is false at oninit
+    // time. fof/rich-text exposes a "Toggle Rich Text Mode" pen button that
+    // flips the pref mid-session, calls buildEditor directly, and skips the
+    // _load → onbuild path our patches piggyback on. If we gated on the pref
+    // here, the prototype-level patches (buildExtensions, TiptapMenu.items)
+    // would never apply for users who start in markdown mode and toggle into
+    // Tiptap — the editor would mount but our table nodes wouldn't be in the
+    // schema and the table button wouldn't be in the toolbar.
     extend(TextEditor.prototype, 'oninit', function () {
-        const user = app.session.user;
-        if (!user || !user.preferences()?.useRichTextEditor) return;
+        if (!app.session.user) return;
 
         this._loaders = this._loaders || [];
         this._loaders.push(() =>
