@@ -1,5 +1,5 @@
 import app from 'flarum/forum/app';
-import { extend } from 'flarum/common/extend';
+import { extend, override } from 'flarum/common/extend';
 import TextEditor from 'flarum/common/components/TextEditor';
 
 import { createTableNodes } from './tiptap/nodes';
@@ -12,6 +12,38 @@ import InsertTableDropdown from './tiptap/InsertTableDropdown';
 // prototypes have been patched and our extensions are in the schema.
 export default function configureRichText() {
     if (!('fof-rich-text' in flarum.extensions)) return;
+
+    // Workaround for an upstream timing race in flarum/core's TextEditor.
+    // oncreate calls `_load().then(() => setTimeout(this.onbuild, 50))`. The
+    // 50ms timer can fire before Mithril has flushed the redraw triggered by
+    // `_load` setting `loading=false`, so `.TextEditor-editorContainer` isn't
+    // in the DOM yet. onbuild then calls buildEditor with `target=undefined`,
+    // Tiptap's Editor skips its mount() (gated on `options.element`), and any
+    // subsequent access to `editor.view.dom` throws "view is not available".
+    // The composer falls back to a broken BBCode toolbar — no Tiptap menu, so
+    // our table button has nowhere to attach.
+    //
+    // Force-flushing the redraw inside `_load` guarantees the container is in
+    // the DOM by the time the 50ms timer fires.
+    override(TextEditor.prototype, '_load', function (original) {
+        return original().then(() => {
+            try { m.redraw.sync(); } catch (e) {}
+        });
+    });
+
+    // Belt-and-braces: if the sync redraw above is ever insufficient, retry
+    // onbuild on the next tick rather than letting Tiptap mount against an
+    // undefined target.
+    override(TextEditor.prototype, 'onbuild', function (original) {
+        if (!this.$('.TextEditor-editorContainer')[0]) {
+            try { m.redraw.sync(); } catch (e) {}
+            if (!this.$('.TextEditor-editorContainer')[0]) {
+                setTimeout(() => this.onbuild(), 50);
+                return;
+            }
+        }
+        return original();
+    });
 
     extend(TextEditor.prototype, 'oninit', function () {
         const user = app.session.user;
