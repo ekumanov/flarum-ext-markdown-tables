@@ -6,4 +6,4 @@ js/dist/*.map
 .vscode/
 *.DS_Store
 .claude/
-discuss-posts/
+docs/discuss-posts/
