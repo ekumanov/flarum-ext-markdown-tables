@@ -4,18 +4,24 @@
 
 // ── Rendered post tables ────────────────────────────────────────────
 .Post-body {
-    .markdown-table-wrapper {
-        overflow-x: auto;
-        margin: 1em 0;
-        max-width: 100%;
-    }
-
     table {
+        // The table itself is the horizontal scroll container, so a table
+        // wider than the post column scrolls instead of overflowing it. As a
+        // block, its rows get an anonymous inner table box that still lays
+        // out as a normal table (border-collapse is inherited by it).
+        //
+        // This is CSS-only on purpose: post bodies are Mithril m.trust
+        // content, and moving the <table> into a wrapper element breaks
+        // Mithril's later removal of it on edit/redraw.
+        display: block;
+        overflow-x: auto;
+        max-width: 100%;
+        // Hug the content: narrow tables stay compact instead of stretching a
+        // full-width scroll box, and reasonable-width tables still wrap their
+        // cell text to fit (max-width wins) before falling back to scroll.
+        width: max-content;
         border-collapse: collapse;
-        margin: 0;
-        // No min-width: 100% — let the table size to its content. This way
-        // narrow tables stay compact on desktop and reasonable-width tables
-        // shrink to fit on mobile instead of jumping straight to scroll.
+        margin: 1em 0;
     }
 
     th, td {
@@ -37,7 +43,12 @@
 
 // ── Tiptap composer table styling ───────────────────────────────────
 .TextEditor .ProseMirror {
+    // fof/rich-text gives the editor the Post-body class too; undo the
+    // rendered-post scroll-box styling, since the editor wraps its tables in
+    // its own .markdown-table-wrapper.
     table {
+        display: table;
+        max-width: none;
         border-collapse: collapse;
         margin: 0.5em 0;
         overflow: hidden;

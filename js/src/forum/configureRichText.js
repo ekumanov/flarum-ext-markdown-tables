@@ -1,107 +1,65 @@
-import app from 'flarum/forum/app';
-import { extend, override } from 'flarum/common/extend';
-import TextEditor from 'flarum/common/components/TextEditor';
+import { extend } from 'flarum/common/extend';
 
 import { createTableNodes } from './tiptap/nodes';
 import { patchMarkdownParserBuilder, patchMarkdownSerializerBuilder } from './tiptap/markdown';
 import InsertTableDropdown from './tiptap/InsertTableDropdown';
 
-// Hook our table support into fof/rich-text. fof/rich-text loads its Tiptap
-// driver lazily inside TextEditor.oninit via a `_loaders` queue — we push our
-// own loader onto that queue. By the time the editor is constructed, Tiptap's
-// prototypes have been patched and our extensions are in the schema.
-export default function configureRichText() {
-    if (!('fof-rich-text' in flarum.extensions)) return;
+const NAMESPACE = 'fof-rich-text';
 
-    // Workaround for an upstream timing race in flarum/core's TextEditor.
-    // oncreate calls `_load().then(() => setTimeout(this.onbuild, 50))`. The
-    // 50ms timer can fire before Mithril has flushed the redraw triggered by
-    // `_load` setting `loading=false`, so `.TextEditor-editorContainer` isn't
-    // in the DOM yet. onbuild then calls buildEditor with `target=undefined`,
-    // Tiptap's Editor skips its mount() (gated on `options.element`), and any
-    // subsequent access to `editor.view.dom` throws "view is not available".
-    // The composer falls back to a broken BBCode toolbar — no Tiptap menu, so
-    // our table button has nowhere to attach.
-    //
-    // Force-flushing the redraw inside `_load` guarantees the container is in
-    // the DOM by the time the 50ms timer fires.
-    override(TextEditor.prototype, '_load', function (original) {
-        return original().then(() => {
-            try { m.redraw.sync(); } catch (e) {}
+// Hook our table support into fof/rich-text. Its Tiptap driver lives in lazily
+// loaded chunks that fof/rich-text imports only when the editor is actually
+// needed: from its own TextEditor loader when the user's rich-text preference
+// is on, or from the "Toggle Rich Text Mode" button when a markdown-mode user
+// switches mid-session. Rather than importing those chunks ourselves (which
+// made every logged-in user download the ~530 KB driver before the composer
+// could open), we patch each module the moment it registers, whichever path
+// loaded it.
+//
+// Timing: `flarum.reg.onLoad` runs its handler synchronously inside the
+// chunk's module evaluation (or immediately, if the module is already
+// registered). Both fof/rich-text paths await that import before calling
+// buildEditor, so the table nodes and markdown patches are in place before
+// the editor builds its schema and its markdown parser/serializer, and the
+// toolbar button before TiptapMenu first renders.
+export default function configureRichText() {
+    if (!(NAMESPACE in flarum.extensions)) return;
+
+    const moduleDefault = (mod) => (mod && mod.default ? mod.default : mod);
+
+    flarum.reg.onLoad(NAMESPACE, 'common/tiptap/TiptapEditorDriver', (mod) => {
+        let nodes = null;
+
+        // Add our six table-related Tiptap nodes to the editor's extension list.
+        // `Node` comes from a sibling module in the same chunk; it is resolved
+        // at build time so registration order within the chunk doesn't matter.
+        extend(moduleDefault(mod).prototype, 'buildExtensions', function (items) {
+            if (!nodes) {
+                nodes = createTableNodes(flarum.reg.get(NAMESPACE, 'common/tiptap/tiptap').Node);
+            }
+
+            items.add('mdtable',        nodes.Table);
+            items.add('mdtableHead',    nodes.TableHead);
+            items.add('mdtableBody',    nodes.TableBody);
+            items.add('mdtableRow',     nodes.TableRow);
+            items.add('mdtableCell',    nodes.TableCell);
+            items.add('mdtableHeader',  nodes.TableHeader);
         });
     });
 
-    // Belt-and-braces: if the sync redraw above is ever insufficient, retry
-    // onbuild on the next tick rather than letting Tiptap mount against an
-    // undefined target.
-    override(TextEditor.prototype, 'onbuild', function (original) {
-        if (!this.$('.TextEditor-editorContainer')[0]) {
-            try { m.redraw.sync(); } catch (e) {}
-            if (!this.$('.TextEditor-editorContainer')[0]) {
-                setTimeout(() => this.onbuild(), 50);
-                return;
-            }
-        }
-        return original();
-    });
-
-    // We always queue our loader, even if useRichTextEditor is false at oninit
-    // time. fof/rich-text exposes a "Toggle Rich Text Mode" pen button that
-    // flips the pref mid-session, calls buildEditor directly, and skips the
-    // _load → onbuild path our patches piggyback on. If we gated on the pref
-    // here, the prototype-level patches (buildExtensions, TiptapMenu.items)
-    // would never apply for users who start in markdown mode and toggle into
-    // Tiptap — the editor would mount but our table nodes wouldn't be in the
-    // schema and the table button wouldn't be in the toolbar.
-    extend(TextEditor.prototype, 'oninit', function () {
-        if (!app.session.user) return;
-
-        this._loaders = this._loaders || [];
-        this._loaders.push(() =>
-            Promise.all([
-                import('ext:fof/rich-text/common/tiptap/TiptapEditorDriver'),
-                import('ext:fof/rich-text/common/components/TiptapMenu'),
-                import('ext:fof/rich-text/common/tiptap/markdown/MarkdownParserBuilder'),
-                import('ext:fof/rich-text/common/tiptap/markdown/MarkdownSerializerBuilder'),
-                import('ext:fof/rich-text/common/tiptap/tiptap'),
-            ]).then(([driverMod, menuMod, parserMod, serializerMod, tiptapMod]) => {
-                patchOnce(
-                    driverMod.default,
-                    menuMod.default,
-                    parserMod.default,
-                    serializerMod.default,
-                    tiptapMod.Node
-                );
-            })
-        );
-    });
-}
-
-let patched = false;
-
-function patchOnce(TiptapEditorDriver, TiptapMenu, MarkdownParserBuilder, MarkdownSerializerBuilder, Node) {
-    if (patched) return;
-    patched = true;
-
-    const { Table, TableHead, TableBody, TableRow, TableCell, TableHeader } = createTableNodes(Node);
-
-    // Add our six table-related Tiptap nodes to the editor's extension list.
-    extend(TiptapEditorDriver.prototype, 'buildExtensions', function (items) {
-        items.add('mdtable',        Table);
-        items.add('mdtableHead',    TableHead);
-        items.add('mdtableBody',    TableBody);
-        items.add('mdtableRow',     TableRow);
-        items.add('mdtableCell',    TableCell);
-        items.add('mdtableHeader',  TableHeader);
-    });
-
     // Add an "Insert table" button to the toolbar.
-    extend(TiptapMenu.prototype, 'items', function (items) {
-        const editor = this.attrs.editor;
-        if (!editor) return;
-        items.add('mdtable', InsertTableDropdown.component({ editor }), 35);
+    flarum.reg.onLoad(NAMESPACE, 'common/components/TiptapMenu', (mod) => {
+        extend(moduleDefault(mod).prototype, 'items', function (items) {
+            const editor = this.attrs.editor;
+            if (!editor) return;
+            items.add('mdtable', InsertTableDropdown.component({ editor }), 35);
+        });
     });
 
-    patchMarkdownParserBuilder(MarkdownParserBuilder);
-    patchMarkdownSerializerBuilder(MarkdownSerializerBuilder);
+    flarum.reg.onLoad(NAMESPACE, 'common/tiptap/markdown/MarkdownParserBuilder', (mod) => {
+        patchMarkdownParserBuilder(moduleDefault(mod));
+    });
+
+    flarum.reg.onLoad(NAMESPACE, 'common/tiptap/markdown/MarkdownSerializerBuilder', (mod) => {
+        patchMarkdownSerializerBuilder(moduleDefault(mod));
+    });
 }

@@ -100,7 +100,7 @@ PipeTables is already shipped inside `s9e/text-formatter` (a Flarum core depende
 
 Two small things happen on the forum side regardless of which editor you use:
 
-1. **Wrap rendered tables for horizontal scroll.** PipeTables emits bare `<table>` elements; without a wrapper, a table wider than the post column overflows or breaks layout. We hook into `Post#oncreate`/`onupdate` and wrap each `<table>` in a `<div class="markdown-table-wrapper">` with `overflow-x: auto`. The wrap is idempotent — a `data-markdown-tables-wrapped` attribute prevents double-wrapping when Mithril rerenders.
+1. **Scroll wide tables horizontally.** PipeTables emits bare `<table>` elements; left alone, a table wider than the post column overflows or breaks layout. The table itself becomes the scroll container (`display: block; overflow-x: auto; max-width: 100%; width: max-content`), in CSS only. Wrapping the table in an extra element from JavaScript is deliberately avoided: post bodies are Mithril `m.trust` content, and moving their nodes makes Mithril's later removal of them fail on edit or redraw.
 
 2. **Style the table.** Borders use `var(--control-bg)`, header rows pick up `var(--control-bg)` as background, even rows get a subtle striping. Everything goes through Flarum 2's CSS custom properties so it follows the theme automatically.
 
@@ -119,7 +119,7 @@ table > tableHead > tableRow > tableHeader   (one head row)
 
 Each node has standard `parseHTML` / `renderHTML` rules. Cell nodes carry an optional `style` attribute that holds the alignment (`text-align: left|center|right`), parsed from the markdown separator and replayed when the cell renders.
 
-The `Node` constructor is captured lazily, after `fof/rich-text`'s async chunk loads — resolving it at module load time would crash, because the chunk hasn't loaded yet. We push our setup work onto `TextEditor.prototype.oninit`'s `_loaders` array, which Tiptap's editor awaits before construction.
+The `Node` constructor is captured lazily, after `fof/rich-text`'s async chunk loads — resolving it at module load time would crash, because the chunk hasn't loaded yet. We never load that chunk ourselves: each patch is registered with `flarum.reg.onLoad('fof-rich-text', …)` and applies the moment `fof/rich-text` loads the module, whether from its own composer loader (rich-text mode on) or from its "Toggle Rich Text Mode" button. Both paths await the import before building the editor, so the patches are always in place before the schema is built — and users who write in plain markdown never download the Tiptap bundle.
 
 #### 2. Markdown parser tokens
 
@@ -132,7 +132,7 @@ The `Node` constructor is captured lazily, after `fof/rich-text`'s async chunk l
 
 When the user types a table in the WYSIWYG editor and hits submit, Tiptap calls our serializer to turn the doc back into markdown. We hook `MarkdownSerializerBuilder.prototype.buildNodes` and add a `table` handler that walks `tableHead` → `tableRow` → `tableHeader`, emits the header pipe row, then the alignment separator row (`| --- | :---: | ---: |`), then each `tableBody` row.
 
-Pipe characters that appear inside a cell are escaped to `\|` so they don't break the table syntax.
+Pipe characters that appear inside a cell are escaped to `\|` so they don't break the table syntax, and line breaks inside a cell (e.g. a pasted `<br>`) become spaces, since a newline would end the row. Every row is padded to the widest row's column count — a table pasted from a spreadsheet has no header row, and without padding the auto-created one-cell header would make the next re-parse cut every row down to one column.
 
 #### 4. Toolbar dropdown
 
