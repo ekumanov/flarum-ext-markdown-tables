@@ -86,6 +86,12 @@
     .Dropdown-menu {
         padding: 12px;
         min-width: 220px;
+
+        // Core lays out every `.TextEditor-controls li` inline for the
+        // toolbar buttons, which also caught our menu items.
+        > li {
+            display: block;
+        }
     }
 
     .Form-group {
